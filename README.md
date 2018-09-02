@@ -11,9 +11,11 @@ This will do the following:
 7. Creates an ECS cluster of fargate tasks
 
 To kick it off run the following command:
+
 run.ps1 [projectName] [profileName] [codeCommitUrl] [accountId] [healthCheckUrlPath] [region] [imageTag]
 
 To tear down your stack when finished run the following command:
+
 .\tear-down\tear-down.ps1 [projectName] [profileName] [region]
 
 Prerequisites:

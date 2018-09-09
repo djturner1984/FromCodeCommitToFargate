@@ -19,6 +19,9 @@ To tear down your stack when finished run the following command:
 
 .\tear-down\tear-down.ps1 [projectName] [profileName] [region]
 
+
+You can make this work by creating a codecommit repository from this example: https://github.com/djturner1984/FromCodeCommitToFargate-ExampleProject
+
 Prerequisites:
 
 AWS CLI

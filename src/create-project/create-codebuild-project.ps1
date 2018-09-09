@@ -5,11 +5,12 @@ param(
 [String] $accountId,
 [String] $imageRepoName,
 [String] $serviceRole,
+[String] $bucketName,
 [String] $region = "ap-southeast-2",
 [String] $imageTag = "latest") #Must be the first statement in your script
 
 if (!$projectName -Or !$profileName -Or !$codeCommitUrl -Or 
-    !$accountId -Or !$imageRepoName -Or !$serviceRole) {
+    !$accountId -Or !$imageRepoName -Or !$serviceRole -Or !$bucketName) {
     Write-Host 'Please pass in parameters'
     return
 }
@@ -22,6 +23,7 @@ $content = $content.replace('{AWS_ACCOUNT_ID}', $accountId)
 $content = $content.replace('{IMAGE_REPO_NAME}', $imageRepoName)
 $content = $content.replace('{IMAGE_TAG}', $imageTag)
 $content = $content.replace('{SERVICE_ROLE}', $serviceRole)
+$content = $content.replace('{BUCKET_NAME}', $bucketName)
 $content | Set-Content ./create-project/create-project.json
 
 Write-Host "running aws codebuild create-project --cli-input-json file://create-project.json --profile $($profileName) --region $($region)"

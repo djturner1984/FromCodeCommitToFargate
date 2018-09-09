@@ -1,20 +1,30 @@
 param(
 [String] $projectName,
 [String] $profileName,
-[String] $codeCommitUrl,
+[String] $codeCommitRepoName,
 [String] $accountId,
 [String] $healthCheckUrlPath,
+[String] $bucketName,
 [String] $region = "ap-southeast-2",
 [String] $imageTag = "latest")
 
 if (!$projectName -Or !$profileName -Or 
-    !$codeCommitUrl -Or !$accountId -Or !$healthCheckUrlPath) {
-    Write-Host 'Usage run.ps1 [projectName] [profileName] [codeCommitUrl] [accountId] [healthCheckUrlPath] [region] [imageTag]'
+    !$codeCommitRepoName -Or !$accountId -Or !$healthCheckUrlPath -Or !$bucketName) {
+    Write-Host 'Usage run.ps1 [projectName] [profileName] [codeCommitUrl] [accountId] [healthCheckUrlPath] [bucketName] [region] [imageTag]'
     return
 }
 
-Write-Host "Running with run.ps1 $($projectName) $($profileName) $($codeCommitUrl) $($accountId) $($healthCheckUrlPath) $($region) $($imageTag)"
+Write-Host "Running with run.ps1 $($projectName) $($profileName) $($codeCommitRepoName) $($accountId) $($healthCheckUrlPath) $($region) $($imageTag)"
 try {
+    # Get code commit details
+    $repo = aws codecommit get-repository --repository-name $codeCommitRepoName --profile $profileName --region $region | ConvertFrom-Json
+    if (!$repo.repositoryMetadata) {
+        throw "Error getting codecommit repository for $($codeCommitRepoName)" 
+        return
+    }
+
+    $codeCommitUrl = $repo.repositoryMetadata.cloneUrlHttp
+
     # Create ECR Repository
     Write-Host 'Creating ECR Repository'
     $ecrRepo = .\create-repository\create-repository.ps1 $projectName | ConvertFrom-Json
@@ -27,8 +37,8 @@ try {
     $ecrRepositoryName = $ecrRepo.repository.repositoryName
 
     # Create role
-    Write-Host 'Creating Role'
-    $roleName = "$($projectName)-role"
+    Write-Host 'Creating Role for codebuild'
+    $roleName = "$($projectName)-codebuild-role"
 
     $role = .\create-role\create-iam-role.ps1 $roleName $profileName $region | ConvertFrom-Json
 
@@ -41,7 +51,7 @@ try {
     Start-Sleep -s 10
     # Code build project
     Write-Host 'Creating CodeBuild project for repo ' $ecrRepo.repository.repositoryName
-    .\create-project\create-codebuild-project.ps1 $projectName $profileName $codeCommitUrl $accountId $ecrRepositoryName $role.Role.Arn
+    .\create-project\create-codebuild-project.ps1 $projectName $profileName $codeCommitUrl $accountId $ecrRepositoryName $role.Role.Arn $bucketName
 
     Write-Host "Waiting for build to be ready"
     Start-Sleep -s 10
@@ -75,12 +85,25 @@ try {
     Write-Host 'Creating VPC'
     .\cloudformation\create-vpc.ps1 $profileName $projectName $region
 
-    Start-Sleep -s 180
+    Start-Sleep -s 300
     Write-Host 'Waiting for vpc stack'
     aws cloudformation wait stack-exists --stack-name $vpcStackName --profile $profileName --region $region
     # Create fargate service
     Write-Host 'Creating Service'
     .\cloudformation\create-service.ps1 $profileName $healthCheckUrlPath $ecrRepo.repository.repositoryUri $projectName $region
+
+    Start-Sleep -s 300
+    Write-Host 'Waiting for service stack'
+    $stackName = "$($projectName)-stack"
+    aws cloudformation wait stack-exists --stack-name $stackName --profile $profileName --region $region
+    $clusterName = .\get-cluster.ps1 $projectName $profileName $region
+    
+    Write-Host 'Creating Role for codepipeline'
+    $roleName = "$($projectName)-codepipeline-role"
+    $codepipelineRole = .\create-role\create-codepipeline-role.ps1 $roleName $profileName $region | ConvertFrom-Json
+    Write-Host "Waiting for role to be ready"
+    Start-Sleep -s 10
+    .\codepipeline\create-pipeline.ps1 $projectName $bucketName $codeCommitRepoName $clusterName $codepipelineRole.Role.Arn $profileName $region
 } catch {
     $errorMessage = $_.Exception.Message
     $failedItem = $_.Exception.ItemName

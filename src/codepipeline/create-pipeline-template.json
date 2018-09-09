@@ -1,0 +1,92 @@
+{
+    "pipeline": {
+     "roleArn": "{ROLE_ARN}",
+     "stages": [
+       {
+         "name": "Source",
+         "actions": [
+           {
+             "inputArtifacts": [],
+             "name": "Source",
+             "actionTypeId": {
+               "category": "Source",
+               "owner": "AWS",
+               "version": "1",
+               "provider": "CodeCommit"
+             },
+             "outputArtifacts": [
+               {
+                 "name": "MyApp"
+               }
+             ],
+             "configuration": {
+                "BranchName": "master",
+                "RepositoryName": "{REPOSITORY_NAME}"
+             },
+             "runOrder": 1
+           }
+         ]
+       },
+       {
+         "name": "Build",
+         "actions": [
+           {
+             "inputArtifacts": [
+               {
+                 "name": "MyApp"
+               }
+             ],
+             "name": "Build",
+             "actionTypeId": {
+               "category": "Build",
+               "owner": "AWS",
+               "version": "1",
+               "provider": "CodeBuild"
+             },
+             "outputArtifacts": [
+            {
+                 "name": "BuiltApp"
+            }
+          ],
+             "configuration": {
+               "ProjectName": "{PROJECT_NAME}"
+             },
+             "runOrder": 1
+           }
+         ]
+       },
+       {
+        "name": "Deploy",
+        "actions": [
+          {
+            "inputArtifacts": [
+                {
+                    "name": "BuiltApp"
+                }
+            ],
+            "name": "Deploy",
+            "actionTypeId": {
+              "category": "Deploy",
+              "owner": "AWS",
+              "version": "1",
+              "provider": "ECS"
+            },
+            "outputArtifacts": [
+         ],
+            "configuration": {
+              "ClusterName": "{CLUSTER_NAME}",
+              "ServiceName": "{PROJECT_NAME}"
+            },
+            "runOrder": 1
+          }
+        ]
+      }
+     ],
+     "artifactStore": {
+       "type": "S3",
+       "location": "{BUCKET_NAME}"
+     },
+     "name": "{PIPELINE_NAME}",
+     "version": 1
+    }
+}

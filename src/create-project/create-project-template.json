@@ -5,7 +5,12 @@
       "location": "{CODECOMMIT_URL}"
     },
     "artifacts": {
-      "type": "NO_ARTIFACTS"
+      "type": "S3",
+      "location": "{BUCKET_NAME}",
+      "path": "imagedefinitions.json",
+      "namespaceType": "BUILD_ID",
+      "name": "{PROJECT_NAME}",
+      "packaging": "NONE"
     },
     "environment": {
       "type": "LINUX_CONTAINER",
@@ -28,7 +33,8 @@
           "name": "IMAGE_TAG",
           "value": "{IMAGE_TAG}"
         }
-      ]
+      ],
+      "privilegedMode": true
     },
     "serviceRole": "{SERVICE_ROLE}"
   }

@@ -9,10 +9,11 @@ This will do the following:
 5. Waits for successful build
 6. Creates a VPC (CloudFormation)
 7. Creates an ECS cluster of fargate tasks
+8. Creates codepipeline integration (will build and deploy on every commit)
 
 To kick it off run the following command:
 
-run.ps1 [projectName] [profileName] [codeCommitUrl] [accountId] [healthCheckUrlPath] [region] [imageTag]
+run.ps1 [projectName] [profileName] [codeCommitUrl] [accountId] [healthCheckUrlPath] [bucketName] [region] [imageTag]
 
 To tear down your stack when finished run the following command:
 
@@ -27,6 +28,8 @@ AWS CLI profile with enough permissions
 CodeCommit repository with dockerfile
 
 Buildspec.yml in your repository
+
+An S3 bucket for artifacts
 
 Limitations:
 Not completely idempotent yet
